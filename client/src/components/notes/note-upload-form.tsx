@@ -66,16 +66,26 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           if (data.extractedContact) {
             setExtractedContacts(prev => [...prev, data.extractedContact]);
 
-            // Check if contact already exists
-            const searchResponse = await fetch(`/api/contacts/search?name=${encodeURIComponent(data.extractedContact.name)}`);
-            const existingContact = await searchResponse.json();
+            // Check for duplicate contacts
+            const duplicatesResponse = await fetch(`/api/contacts/duplicates/${encodeURIComponent(data.extractedContact.name)}`);
+            const duplicateContacts = await duplicatesResponse.json();
 
             let contactId: number;
 
-            if (existingContact) {
-              // Use existing contact
-              contactId = existingContact.id;
-              console.log('Using existing contact:', existingContact.name);
+            if (duplicateContacts.length > 0) {
+              // Use the first contact as primary and merge others if they exist
+              contactId = duplicateContacts[0].id;
+
+              if (duplicateContacts.length > 1) {
+                // Merge all duplicates into the first contact
+                const duplicateIds = duplicateContacts.slice(1).map(c => c.id);
+                await apiRequest("POST", "/api/contacts/merge", {
+                  primaryId: contactId,
+                  duplicateIds
+                });
+
+                console.log('Merged duplicate contacts into:', duplicateContacts[0].name);
+              }
             } else {
               // Create new contact
               const contactResponse = await apiRequest("POST", "/api/contacts", {

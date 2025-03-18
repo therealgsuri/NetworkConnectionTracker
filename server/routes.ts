@@ -104,6 +104,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add these routes after the existing contacts routes
+  app.get("/api/contacts/duplicates/:name", async (req, res) => {
+    try {
+      const duplicates = await storage.findDuplicateContacts(req.params.name);
+      res.json(duplicates);
+    } catch (error) {
+      console.error('Error finding duplicate contacts:', error);
+      res.status(500).json({ message: "Failed to find duplicate contacts" });
+    }
+  });
+
+  app.post("/api/contacts/merge", async (req, res) => {
+    try {
+      const { primaryId, duplicateIds } = req.body;
+
+      if (!primaryId || !duplicateIds || !Array.isArray(duplicateIds)) {
+        return res.status(400).json({ message: "Invalid request body" });
+      }
+
+      const mergedContact = await storage.mergeContacts(primaryId, duplicateIds);
+      res.json(mergedContact);
+    } catch (error) {
+      console.error('Error merging contacts:', error);
+      res.status(500).json({ message: "Failed to merge contacts" });
+    }
+  });
+
 
   // Notes
   app.get("/api/contacts/:id/notes", async (req, res) => {

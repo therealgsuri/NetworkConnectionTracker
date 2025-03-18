@@ -12,7 +12,7 @@ import {
   userPreferences
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, ilike, and, or } from "drizzle-orm";
 
 export interface IStorage {
   // Contacts
@@ -41,6 +41,10 @@ export interface IStorage {
 
   // Contact Tier
   getContactTier(contact: Contact): ContactTier;
+
+  // Add new methods for handling duplicates
+  findDuplicateContacts(name: string): Promise<Contact[]>;
+  mergeContacts(primaryId: number, duplicateIds: number[]): Promise<Contact>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -159,6 +163,47 @@ export class DatabaseStorage implements IStorage {
     if (matchesCompany && matchesRole) return "GOLD";
     if (matchesCompany) return "SILVER";
     return "STANDARD";
+  }
+
+  async findDuplicateContacts(name: string): Promise<Contact[]> {
+    return await db
+      .select()
+      .from(contacts)
+      .where(ilike(contacts.name, `%${name}%`)); // Added % wildcards for partial matches
+  }
+
+  async mergeContacts(primaryId: number, duplicateIds: number[]): Promise<Contact> {
+    // Start a transaction to ensure data consistency
+    return await db.transaction(async (tx) => {
+      // Get the primary contact
+      const [primaryContact] = await tx
+        .select()
+        .from(contacts)
+        .where(eq(contacts.id, primaryId));
+
+      if (!primaryContact) {
+        throw new Error("Primary contact not found");
+      }
+
+      // Move all notes from duplicate contacts to the primary contact
+      await tx
+        .update(notes)
+        .set({ contactId: primaryId })
+        .where(or(...duplicateIds.map(id => eq(notes.contactId, id))));
+
+      // Move all reminders from duplicate contacts to the primary contact
+      await tx
+        .update(reminders)
+        .set({ contactId: primaryId })
+        .where(or(...duplicateIds.map(id => eq(reminders.contactId, id))));
+
+      // Delete the duplicate contacts
+      await tx
+        .delete(contacts)
+        .where(or(...duplicateIds.map(id => eq(contacts.id, id))));
+
+      return primaryContact;
+    });
   }
 }
 
