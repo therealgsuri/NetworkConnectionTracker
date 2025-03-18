@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FileUpload } from "@/components/ui/file-upload";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Props = {
   onSuccess?: () => void;
@@ -114,63 +115,66 @@ export default function NoteUploadForm({ onSuccess }: Props) {
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Upload Conversation Notes</h2>
+    <ScrollArea className="h-[80vh] pr-4">
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Upload Conversation Notes</h2>
 
-      <FileUpload
-        onUpload={processDocument}
-        label="Upload Conversation Document"
-      />
+        <FileUpload
+          onUpload={processDocument}
+          label="Upload Conversation Document"
+        />
 
-      {extractedContact && (
-        <div className="rounded-lg border p-3 mt-4">
-          <h3 className="font-medium mb-2">Extracted Contact Information</h3>
-          {extractedContact.name && <p>Name: {extractedContact.name}</p>}
-          {extractedContact.company && <p>Company: {extractedContact.company}</p>}
-          {extractedContact.role && <p>Role: {extractedContact.role}</p>}
-          {extractedContact.email && <p>Email: {extractedContact.email}</p>}
-        </div>
-      )}
+        {extractedContact && (
+          <div className="rounded-lg border p-3 mt-4">
+            <h3 className="font-medium mb-2">Extracted Contact Information</h3>
+            {extractedContact.name && <p>Name: {extractedContact.name}</p>}
+            {extractedContact.company && <p>Company: {extractedContact.company}</p>}
+            {extractedContact.role && <p>Role: {extractedContact.role}</p>}
+            {extractedContact.email && <p>Email: {extractedContact.email}</p>}
+            {extractedContact.meetingDate && <p>Meeting Date: {extractedContact.meetingDate}</p>}
+          </div>
+        )}
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="content"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Note Content</FormLabel>
-                <FormControl>
-                  <Textarea {...field} rows={5} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="content"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Note Content</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} rows={5} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="meetingDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Meeting Date</FormLabel>
-                <FormControl>
-                  <Input {...field} type="date" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="meetingDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Meeting Date</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="date" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isProcessing || !extractedContact}
-          >
-            Save Note & Create Contact
-          </Button>
-        </form>
-      </Form>
-    </div>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isProcessing || !extractedContact}
+            >
+              Save Note & Create Contact
+            </Button>
+          </form>
+        </Form>
+      </div>
+    </ScrollArea>
   );
 }

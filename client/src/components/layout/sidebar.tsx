@@ -54,7 +54,7 @@ export default function Sidebar() {
                     Add Conversation Note
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0">
                   <NoteUploadForm onSuccess={() => setIsDialogOpen(false)} />
                 </DialogContent>
               </Dialog>
