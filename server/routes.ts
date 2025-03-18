@@ -27,16 +27,26 @@ const upload = multer({
 
 // Function to parse filename for date and name
 function parseFilename(filename: string): { date: string | null; name: string | null } {
-  const match = filename.match(/^(\d{8})\s*-\s*(.+?)(\.docx?)?$/i);
+  // Remove any trailing spaces and file extension
+  const cleanedFilename = filename.trim().replace(/\.docx?$/i, '');
+
+  // Match the pattern: YYYYMMDD - First Last
+  const match = cleanedFilename.match(/^(\d{8})\s*-\s*(.+?)$/i);
   if (!match) return { date: null, name: null };
 
-  const [, dateStr, name] = match;
+  const [, dateStr, fullName] = match;
+
   // Format YYYYMMDD to YYYY-MM-DD
   const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 
+  // Clean up the name: trim spaces and capitalize words
+  const cleanedName = fullName.trim().toLowerCase().replace(/\s+/g, ' ').split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
   return {
     date: formattedDate,
-    name: name.trim()
+    name: cleanedName
   };
 }
 
