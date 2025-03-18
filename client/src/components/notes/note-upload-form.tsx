@@ -15,10 +15,106 @@ type Props = {
   onSuccess?: () => void;
 };
 
+type ProcessingStatus = {
+  total: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+};
+
 export default function NoteUploadForm({ onSuccess }: Props) {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [extractedContact, setExtractedContact] = useState<Record<string, string> | null>(null);
+  const [status, setStatus] = useState<ProcessingStatus | null>(null);
+  const [extractedContacts, setExtractedContacts] = useState<Record<string, any>[]>([]);
+
+  const processDocuments = async (files: File[]) => {
+    setIsProcessing(true);
+    setStatus({ total: files.length, processed: 0, succeeded: 0, failed: 0 });
+    setExtractedContacts([]);
+
+    try {
+      for (const file of files) {
+        try {
+          const formData = new FormData();
+          formData.append("document", file);
+
+          console.log('Uploading file:', file.name, file.size, file.type);
+
+          const response = await fetch("/api/documents/process", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to process document");
+          }
+
+          const data = await response.json();
+          console.log('Processed document data:', data);
+
+          if (data.extractedContact) {
+            setExtractedContacts(prev => [...prev, data.extractedContact]);
+
+            // Create contact and note
+            const contactResponse = await apiRequest("POST", "/api/contacts", {
+              name: data.extractedContact.name,
+              company: data.extractedContact.company || "Unknown Company",
+              role: data.extractedContact.role || "Unknown Role",
+              email: data.extractedContact.email || null,
+              phone: null,
+              linkedinUrl: null,
+              lastContactDate: data.extractedContact.meetingDate || new Date().toISOString().split('T')[0],
+              nextContactDate: null,
+              notes: null,
+            });
+
+            const contactData = await contactResponse.json();
+
+            await apiRequest("POST", "/api/notes", {
+              contactId: contactData.id,
+              content: data.text,
+              meetingDate: data.extractedContact.meetingDate || new Date().toISOString().split('T')[0],
+              documentUrl: null,
+            });
+
+            setStatus(prev => prev ? {
+              ...prev,
+              processed: prev.processed + 1,
+              succeeded: prev.succeeded + 1
+            } : null);
+          }
+        } catch (error) {
+          console.error('Error processing document:', error);
+          setStatus(prev => prev ? {
+            ...prev,
+            processed: prev.processed + 1,
+            failed: prev.failed + 1
+          } : null);
+        }
+      }
+
+      // Refresh contacts list
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
+
+      toast({ 
+        title: "Documents processed",
+        description: `Successfully processed ${status?.succeeded || 0} out of ${status?.total || 0} documents.`
+      });
+
+      onSuccess?.();
+    } catch (error) {
+      console.error('Batch processing error:', error);
+      toast({
+        title: "Error processing documents",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const form = useForm<InsertNote>({
     resolver: zodResolver(insertNoteSchema),
@@ -30,102 +126,6 @@ export default function NoteUploadForm({ onSuccess }: Props) {
     },
   });
 
-  const processDocument = async (file: File) => {
-    setIsProcessing(true);
-    try {
-      const formData = new FormData();
-      formData.append("document", file);
-
-      console.log('Uploading file:', file.name, file.size, file.type);
-
-      const response = await fetch("/api/documents/process", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to process document");
-      }
-
-      const data = await response.json();
-      console.log('Processed document data:', data);
-
-      form.setValue("content", data.text);
-      if (data.extractedContact.meetingDate) {
-        form.setValue("meetingDate", data.extractedContact.meetingDate);
-      }
-      setExtractedContact(data.extractedContact);
-
-      toast({
-        title: "Document processed successfully",
-        description: data.extractedContact.name
-          ? `Found contact: ${data.extractedContact.name}`
-          : "No contact information found",
-      });
-    } catch (error) {
-      console.error('Document processing error:', error);
-      toast({
-        title: "Error processing document",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const onSubmit = async (formData: InsertNote) => {
-    try {
-      console.log('Form data before submission:', formData);
-      console.log('Form validation state:', form.formState);
-
-      setIsProcessing(true);
-
-      if (!extractedContact?.name) {
-        throw new Error("No contact information found");
-      }
-
-      console.log('Creating contact with data:', extractedContact);
-
-      // First create the contact
-      const contactResponse = await apiRequest("POST", "/api/contacts", {
-        name: extractedContact.name,
-        company: extractedContact.company || "Unknown Company",
-        role: extractedContact.role || "Unknown Role",
-        email: extractedContact.email || null,
-        phone: null,
-        linkedinUrl: null,
-        lastContactDate: extractedContact.meetingDate || new Date().toISOString().split('T')[0],
-        nextContactDate: null,
-        notes: null,
-      });
-
-      const contactData = await contactResponse.json();
-      console.log('Created contact:', contactData);
-
-      // Then create the note
-      await apiRequest("POST", "/api/notes", {
-        ...formData,
-        contactId: contactData.id,
-        meetingDate: extractedContact.meetingDate || formData.meetingDate,
-      });
-
-      toast({ title: "Note and contact created successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
-      form.reset();
-      onSuccess?.();
-    } catch (error) {
-      console.error('Form submission error:', error);
-      toast({
-        title: "Error creating note and contact",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   return (
     <ScrollArea className="h-[80vh] pr-4">
@@ -133,69 +133,42 @@ export default function NoteUploadForm({ onSuccess }: Props) {
         <h2 className="text-lg font-semibold">Upload Conversation Notes</h2>
 
         <FileUpload
-          onUpload={processDocument}
-          label="Upload Conversation Document"
+          onUpload={processDocuments}
+          label="Upload Conversation Documents"
+          multiple={true}
+          maxFiles={100}
         />
 
-        {extractedContact && (
-          <div className="rounded-lg border p-3 mt-4">
-            <h3 className="font-medium mb-2">Extracted Contact Information</h3>
-            {extractedContact.name && <p>Name: {extractedContact.name}</p>}
-            {extractedContact.company && <p>Company: {extractedContact.company}</p>}
-            {extractedContact.role && <p>Role: {extractedContact.role}</p>}
-            {extractedContact.email && <p>Email: {extractedContact.email}</p>}
-            {extractedContact.meetingDate && <p>Meeting Date: {extractedContact.meetingDate}</p>}
+        {status && (
+          <div className="rounded-lg border p-4 mt-4">
+            <h3 className="font-medium mb-2">Processing Status</h3>
+            <div className="space-y-2">
+              <p>Total files: {status.total}</p>
+              <p>Processed: {status.processed} / {status.total}</p>
+              <p className="text-green-600">Succeeded: {status.succeeded}</p>
+              {status.failed > 0 && (
+                <p className="text-red-600">Failed: {status.failed}</p>
+              )}
+            </div>
           </div>
         )}
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Note Content</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={5} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="meetingDate"
-              render={({ field: { value, onChange, ...field } }) => (
-                <FormItem>
-                  <FormLabel>Meeting Date</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="date"
-                      value={value instanceof Date ? value.toISOString().split('T')[0] : value}
-                      onChange={(e) => onChange(e.target.value)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isProcessing || !extractedContact}
-              onClick={() => {
-                console.log('Form state:', form.getValues());
-                console.log('Form errors:', form.formState.errors);
-              }}
-            >
-              Save Note & Create Contact
-            </Button>
-          </form>
-        </Form>
+        {extractedContacts.length > 0 && (
+          <div className="rounded-lg border p-4 mt-4">
+            <h3 className="font-medium mb-2">Processed Contacts</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {extractedContacts.map((contact, index) => (
+                <div key={index} className="border-b pb-2 last:border-0">
+                  <p>Name: {contact.name}</p>
+                  <p>Company: {contact.company || "Unknown Company"}</p>
+                  {contact.role && <p>Role: {contact.role}</p>}
+                  {contact.email && <p>Email: {contact.email}</p>}
+                  {contact.meetingDate && <p>Meeting Date: {contact.meetingDate}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </ScrollArea>
   );
