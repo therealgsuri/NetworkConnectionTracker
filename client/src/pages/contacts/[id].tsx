@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Link as LinkIcon, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
-import NoteForm from "@/components/notes/note-form";
+import ConversationList from "@/components/conversations/conversation-list";
 import ReminderForm from "@/components/reminders/reminder-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -21,10 +21,6 @@ export default function ContactDetail() {
 
   const { data: contact, isLoading: loadingContact } = useQuery<Contact>({
     queryKey: [`/api/contacts/${contactId}`],
-  });
-
-  const { data: notes = [] } = useQuery<Note[]>({
-    queryKey: [`/api/contacts/${contactId}/notes`],
   });
 
   const { data: reminders = [] } = useQuery<Reminder[]>({
@@ -145,37 +141,14 @@ export default function ContactDetail() {
         </Card>
       </div>
 
-      <Tabs defaultValue="notes" className="w-full">
+      <Tabs defaultValue="conversations" className="w-full">
         <TabsList>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
+          <TabsTrigger value="conversations">Conversations</TabsTrigger>
           <TabsTrigger value="reminders">Reminders</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="notes" className="space-y-4">
-          <div className="flex justify-end">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Note
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <NoteForm contactId={contactId} />
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {notes.map((note) => (
-            <Card key={note.id}>
-              <CardContent className="p-6">
-                <p className="whitespace-pre-wrap">{note.content}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {format(new Date(note.meetingDate), "MMM d, yyyy")}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+        <TabsContent value="conversations" className="space-y-4">
+          <ConversationList contactId={contactId} />
         </TabsContent>
 
         <TabsContent value="reminders" className="space-y-4">
