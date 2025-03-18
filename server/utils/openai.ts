@@ -5,7 +5,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export async function summarizeConversation(text: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4", 
       messages: [
         {
           role: "system",
@@ -29,7 +29,7 @@ export async function summarizeConversation(text: string): Promise<string> {
 export async function generateConversationTitle(text: string): Promise<string> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", 
+      model: "gpt-4", 
       messages: [
         {
           role: "system",
