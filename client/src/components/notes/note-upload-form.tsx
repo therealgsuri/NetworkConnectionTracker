@@ -58,8 +58,8 @@ export default function NoteUploadForm({ onSuccess }: Props) {
 
       toast({
         title: "Document processed successfully",
-        description: data.extractedContact.name 
-          ? `Found contact: ${data.extractedContact.name}` 
+        description: data.extractedContact.name
+          ? `Found contact: ${data.extractedContact.name}`
           : "No contact information found",
       });
     } catch (error) {
@@ -172,9 +172,9 @@ export default function NoteUploadForm({ onSuccess }: Props) {
               )}
             />
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={isProcessing || !extractedContact}
             >
               Save Note & Create Contact
