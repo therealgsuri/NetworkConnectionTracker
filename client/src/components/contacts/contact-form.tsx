@@ -6,7 +6,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type Props = {
   onSuccess?: () => void;
@@ -31,10 +31,15 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
 
   const mutation = useMutation({
     mutationFn: async (data: InsertContact) => {
-      await apiRequest("POST", "/api/contacts", data);
+      await apiRequest("POST", "/api/contacts", {
+        ...data,
+        lastContactDate: data.lastContactDate.toISOString(),
+        nextContactDate: data.nextContactDate?.toISOString() || null,
+      });
     },
     onSuccess: () => {
       toast({ title: "Contact created successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
       form.reset();
       onSuccess?.();
     },
@@ -95,11 +100,16 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
         <FormField
           control={form.control}
           name="email"
-          render={({ field }) => (
+          render={({ field: { value, onChange, ...field }}) => (
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input {...field} type="email" />
+                <Input 
+                  {...field}
+                  type="email" 
+                  value={value || ''} 
+                  onChange={(e) => onChange(e.target.value || null)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -109,11 +119,16 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
         <FormField
           control={form.control}
           name="phone"
-          render={({ field }) => (
+          render={({ field: { value, onChange, ...field }}) => (
             <FormItem>
               <FormLabel>Phone</FormLabel>
               <FormControl>
-                <Input {...field} type="tel" />
+                <Input 
+                  {...field}
+                  type="tel" 
+                  value={value || ''} 
+                  onChange={(e) => onChange(e.target.value || null)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -123,11 +138,35 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
         <FormField
           control={form.control}
           name="linkedinUrl"
-          render={({ field }) => (
+          render={({ field: { value, onChange, ...field }}) => (
             <FormItem>
               <FormLabel>LinkedIn URL</FormLabel>
               <FormControl>
-                <Input {...field} type="url" />
+                <Input 
+                  {...field}
+                  type="url" 
+                  value={value || ''} 
+                  onChange={(e) => onChange(e.target.value || null)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="lastContactDate"
+          render={({ field: { value, onChange, ...field }}) => (
+            <FormItem>
+              <FormLabel>Last Contact Date</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field}
+                  type="date" 
+                  value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
+                  onChange={(e) => onChange(new Date(e.target.value))}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
