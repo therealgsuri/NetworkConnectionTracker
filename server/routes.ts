@@ -30,12 +30,12 @@ function parseFilename(filename: string): { date: string | null; name: string | 
   // Remove any trailing spaces and file extension
   const cleanedFilename = filename.trim().replace(/\.docx?$/i, '');
 
-  // Replace various types of dashes with a standard hyphen and clean multiple spaces
+  // Replace various types of dashes and multiple spaces with a standard format
   const normalizedFilename = cleanedFilename
     .replace(/[\u2013\u2014\s\-–—]+/g, ' - ') // Convert all dashes and multiple spaces to " - "
     .trim();
 
-  // Match the pattern: YYYYMMDD - First Last
+  // Match the pattern: YYYYMMDD - Name
   const match = normalizedFilename.match(/^(\d{8})\s*-\s*(.+?)$/i);
   if (!match) return { date: null, name: null };
 
@@ -44,9 +44,11 @@ function parseFilename(filename: string): { date: string | null; name: string | 
   // Format YYYYMMDD to YYYY-MM-DD
   const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 
-  // Clean up the name: split by space, capitalize each word properly
+  // Clean up the name by removing all special characters and extra spaces
   const cleanedName = fullName
     .trim()
+    .replace(/[^\w\s]/g, ' ') // Replace any non-word character with a space
+    .replace(/\s+/g, ' ')     // Replace multiple spaces with a single space
     .toLowerCase()
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
