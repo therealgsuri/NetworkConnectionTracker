@@ -30,11 +30,13 @@ function parseFilename(filename: string): { date: string | null; name: string | 
   // Remove any trailing spaces and file extension
   const cleanedFilename = filename.trim().replace(/\.docx?$/i, '');
 
-  // Replace various types of dashes with a standard hyphen
-  const normalizedFilename = cleanedFilename.replace(/[\u2013\u2014\s\-]+/g, '-');
+  // Replace various types of dashes with a standard hyphen and clean multiple spaces
+  const normalizedFilename = cleanedFilename
+    .replace(/[\u2013\u2014\s\-–—]+/g, ' - ') // Convert all dashes and multiple spaces to " - "
+    .trim();
 
-  // Match the pattern: YYYYMMDD-First Last
-  const match = normalizedFilename.match(/^(\d{8})-(.+?)$/i);
+  // Match the pattern: YYYYMMDD - First Last
+  const match = normalizedFilename.match(/^(\d{8})\s*-\s*(.+?)$/i);
   if (!match) return { date: null, name: null };
 
   const [, dateStr, fullName] = match;
@@ -42,8 +44,11 @@ function parseFilename(filename: string): { date: string | null; name: string | 
   // Format YYYYMMDD to YYYY-MM-DD
   const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
 
-  // Clean up the name: trim spaces and capitalize words
-  const cleanedName = fullName.trim().toLowerCase().replace(/\s+/g, ' ').split(' ')
+  // Clean up the name: split by space, capitalize each word properly
+  const cleanedName = fullName
+    .trim()
+    .toLowerCase()
+    .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
@@ -186,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await db
         .update(notes)
-        .set({ 
+        .set({
           title: title || null,
           meetingDate: meetingDate ? new Date(meetingDate) : undefined
         })
@@ -231,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .set({ summary, title })
               .where(eq(notes.id, note.id));
 
-            console.log(`Updated note ${note.id}:`, { 
+            console.log(`Updated note ${note.id}:`, {
               oldTitle: note.title,
               newTitle: title,
               oldSummary: note.summary,
@@ -351,14 +356,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No text content found in document" });
       }
 
-      // Generate summary and title using OpenAI
-      const [summary, title] = await Promise.all([
-        summarizeConversation(text),
-        generateConversationTitle(text)
-      ]);
+      // Generate title using OpenAI
+      let title;
+      try {
+        title = await generateConversationTitle(text);
+      } catch (error) {
+        console.error('Error generating conversation title:', error);
+        title = "Career Discussion Notes";
+      }
 
       console.log('Extracted text length:', text.length);
-      console.log('Generated summary:', summary);
       console.log('Generated title:', title);
 
       // Extract potential contact information using improved parsing
@@ -366,7 +373,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contactInfo: Record<string, string> = {
         name,  // Use name from filename
         meetingDate: date,  // Use date from filename
-        summary: summary,  // Add the generated summary
         title: title      // Add the generated title
       };
 
