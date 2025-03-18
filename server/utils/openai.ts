@@ -38,14 +38,31 @@ export async function generateConversationTitle(text: string): Promise<string> {
       messages: [
         {
           role: "system",
-          content: `You are a career conversation title generator. Create a specific, detailed title (3-7 words) that captures the key career insights or advice from the conversation. Focus on:
-- Job roles and responsibilities (e.g. 'Product Ops Supply Chain Role Overview')
-- Application strategies (e.g. 'Resume Tailoring for Tech Applications')
-- Interview preparation (e.g. 'Apple Behavioral Interview Process Guide')
-- Career development (e.g. 'Engineering to Product Management Transition')
-- Company culture and structure (e.g. 'Silicon Valley Workaholic Culture Insights')
+          content: `Extract the main topic from this career-related conversation and create a specific, detailed title. Follow these rules:
 
-Respond only with the title. Make it specific to the company or role discussed if mentioned.`
+1. First identify if the conversation mentions:
+   - Specific companies (e.g. Apple, Google)
+   - Specific roles (e.g. Product Ops, Supply Chain)
+   - Career processes (e.g. interviews, applications)
+
+2. Then create a title (4-7 words) that combines these elements, like:
+   - 'Apple Product Ops Interview Process Guide'
+   - 'Supply Chain vs Product Ops Role Comparison'
+   - 'Resume Optimization for Tech Applications'
+
+3. Also identify and include:
+   - Specific advice given about applications or interviews
+   - Comparisons between different roles or career paths
+   - Company culture insights
+   - Required skills or qualifications discussed
+
+4. Format should be: [Company Name] [Role/Topic] - [Key Insight]
+   Examples:
+   - 'Apple Engineering - Product Ops vs Supply Chain'
+   - 'Tech Resume Tips - 70% Job Description Match'
+   - 'Silicon Valley Culture - Work-Life Balance Insights'
+
+Respond only with the title. Focus on the most important career advice or insight shared.`
         },
         {
           role: "user",

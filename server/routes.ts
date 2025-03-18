@@ -167,30 +167,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add this route after the existing notes routes
-  app.get("/api/notes/regenerate-summaries", async (_req, res) => {
+  app.get("/api/notes/regenerate-summaries", async (req, res) => {
     try {
       const allNotes = await db.select().from(notes);
       let updated = 0;
       let failed = 0;
 
+      console.log(`Starting regeneration for ${allNotes.length} notes`);
+
       for (const note of allNotes) {
-        if (!note.summary && note.content) {
+        if (note.content) {
           try {
-            const summary = await summarizeConversation(note.content);
+            console.log(`Processing note ${note.id}:`, {
+              currentTitle: note.title,
+              contentPreview: note.content.substring(0, 100) + '...'
+            });
+
+            const [summary, title] = await Promise.all([
+              summarizeConversation(note.content),
+              generateConversationTitle(note.content)
+            ]);
+
             await db
               .update(notes)
-              .set({ summary })
+              .set({ summary, title })
               .where(eq(notes.id, note.id));
+
+            console.log(`Updated note ${note.id}:`, { 
+              oldTitle: note.title,
+              newTitle: title,
+              oldSummary: note.summary,
+              newSummary: summary
+            });
             updated++;
           } catch (error) {
             console.error(`Failed to update note ${note.id}:`, error);
             failed++;
+
+            // If we hit OpenAI rate limits, add a delay before the next request
+            if (error.status === 429) {
+              console.log('Rate limited, waiting 20 seconds before next request...');
+              await new Promise(resolve => setTimeout(resolve, 20000));
+            }
           }
         }
       }
 
       res.json({
-        message: `Updated ${updated} notes with summaries. ${failed} failed.`,
+        message: `Updated ${updated} notes with summaries and titles. ${failed} failed.`,
         updated,
         failed
       });
