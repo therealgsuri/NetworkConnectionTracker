@@ -53,9 +53,6 @@ export default function ConversationList({ contactId }: Props) {
             onClick={() => setSelectedNote(conversation)}
           >
             <div className="flex flex-col gap-1">
-              <div className="font-medium">
-                {conversation.title || formatDate(conversation.meetingDate)}
-              </div>
               <div className="text-sm text-muted-foreground">
                 {formatDate(conversation.meetingDate)} - {conversation.summary || "Conversation"}
               </div>
