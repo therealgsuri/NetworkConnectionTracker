@@ -1,12 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertContactSchema, insertNoteSchema, insertCompanySchema, insertReminderSchema, insertUserPreferencesSchema } from "@shared/schema";
+import { insertContactSchema, insertNoteSchema, insertCompanySchema, insertReminderSchema, insertUserPreferencesSchema, notes } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
 import mammoth from "mammoth";
 import { summarizeConversation, generateConversationTitle } from "./utils/openai";
-
+import { eq } from 'drizzle-orm';
+import { db } from './db';
 
 // Configure multer for Word documents only
 const upload = multer({
@@ -133,7 +134,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
   // Notes
   app.get("/api/contacts/:id/notes", async (req, res) => {
     const notes = await storage.getNotes(Number(req.params.id));
@@ -145,9 +145,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!result.success) {
       return res.status(400).json({ errors: result.error.errors });
     }
-    const note = await storage.createNote(result.data);
-    res.status(201).json(note);
+
+    try {
+      // Generate summary if content is provided
+      let summary = null;
+      if (result.data.content) {
+        summary = await summarizeConversation(result.data.content);
+      }
+
+      // Create note with the generated summary
+      const note = await storage.createNote({
+        ...result.data,
+        summary,
+      });
+
+      res.status(201).json(note);
+    } catch (error) {
+      console.error('Error creating note:', error);
+      res.status(500).json({ message: "Failed to create note" });
+    }
   });
+
+  // Add this route after the existing notes routes
+  app.get("/api/notes/regenerate-summaries", async (_req, res) => {
+    try {
+      const allNotes = await db.select().from(notes);
+      let updated = 0;
+      let failed = 0;
+
+      for (const note of allNotes) {
+        if (!note.summary && note.content) {
+          try {
+            const summary = await summarizeConversation(note.content);
+            await db
+              .update(notes)
+              .set({ summary })
+              .where(eq(notes.id, note.id));
+            updated++;
+          } catch (error) {
+            console.error(`Failed to update note ${note.id}:`, error);
+            failed++;
+          }
+        }
+      }
+
+      res.json({
+        message: `Updated ${updated} notes with summaries. ${failed} failed.`,
+        updated,
+        failed
+      });
+    } catch (error) {
+      console.error('Error regenerating summaries:', error);
+      res.status(500).json({ message: "Failed to regenerate summaries" });
+    }
+  });
+
 
   // Companies
   app.get("/api/companies", async (_req, res) => {
