@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { FileUpload } from "@/components/ui/file-upload";
+import { useState } from "react";
 
 type Props = {
   contactId: number;
@@ -16,6 +18,8 @@ type Props = {
 
 export default function NoteForm({ contactId, onSuccess }: Props) {
   const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const form = useForm<InsertNote>({
     resolver: zodResolver(insertNoteSchema),
     defaultValues: {
@@ -25,6 +29,41 @@ export default function NoteForm({ contactId, onSuccess }: Props) {
       documentUrl: "",
     },
   });
+
+  const processDocument = async (file: File) => {
+    setIsProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append("document", file);
+
+      const response = await fetch("/api/documents/process", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to process document");
+      }
+
+      const data = await response.json();
+      form.setValue("content", data.text);
+
+      toast({
+        title: "Document processed successfully",
+        description: data.extractedContact.name 
+          ? `Found contact: ${data.extractedContact.name}` 
+          : "No contact information found",
+      });
+    } catch (error) {
+      toast({
+        title: "Error processing document",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: InsertNote) => {
@@ -48,6 +87,11 @@ export default function NoteForm({ contactId, onSuccess }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+        <FileUpload
+          onUpload={processDocument}
+          label="Upload Conversation Document"
+        />
+
         <FormField
           control={form.control}
           name="content"
@@ -76,21 +120,7 @@ export default function NoteForm({ contactId, onSuccess }: Props) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="documentUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Document URL (Optional)</FormLabel>
-              <FormControl>
-                <Input {...field} type="url" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" className="w-full" disabled={mutation.isPending}>
+        <Button type="submit" className="w-full" disabled={mutation.isPending || isProcessing}>
           {mutation.isPending ? "Adding..." : "Add Note"}
         </Button>
       </form>

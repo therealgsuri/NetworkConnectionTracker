@@ -3,6 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertContactSchema, insertNoteSchema, insertCompanySchema, insertReminderSchema, insertUserPreferencesSchema } from "@shared/schema";
 import { z } from "zod";
+import multer from "multer";
+import mammoth from "mammoth";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Contacts
@@ -122,6 +126,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const prefs = await storage.updateUserPreferences(result.data);
     res.json(prefs);
+  });
+
+  // New route for processing Word documents
+  app.post("/api/documents/process", upload.single("document"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Convert Word document to text
+      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
+      const text = result.value;
+
+      // Extract potential contact information
+      // This is a simple example - you might want to use more sophisticated parsing
+      const lines = text.split('\n');
+      const contactInfo: Record<string, string> = {};
+
+      for (const line of lines) {
+        if (line.toLowerCase().includes('name:')) {
+          contactInfo.name = line.split(':')[1]?.trim() || '';
+        }
+        if (line.toLowerCase().includes('company:')) {
+          contactInfo.company = line.split(':')[1]?.trim() || '';
+        }
+        if (line.toLowerCase().includes('role:')) {
+          contactInfo.role = line.split(':')[1]?.trim() || '';
+        }
+        if (line.toLowerCase().includes('email:')) {
+          contactInfo.email = line.split(':')[1]?.trim() || '';
+        }
+      }
+
+      res.json({
+        text,
+        extractedContact: contactInfo
+      });
+    } catch (error) {
+      console.error('Error processing document:', error);
+      res.status(500).json({ message: "Failed to process document" });
+    }
   });
 
   const httpServer = createServer(app);
