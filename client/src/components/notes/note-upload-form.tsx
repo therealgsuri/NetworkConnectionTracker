@@ -94,6 +94,8 @@ export default function NoteUploadForm({ onSuccess }: Props) {
         company: extractedContact.company || "Unknown Company",
         role: extractedContact.role || "Unknown Role",
         email: extractedContact.email || null,
+        phone: null,
+        linkedinUrl: null,
         lastContactDate: extractedContact.meetingDate || new Date().toISOString().split('T')[0],
         nextContactDate: null,
         notes: null,
@@ -169,7 +171,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
                 <FormItem>
                   <FormLabel>Meeting Date</FormLabel>
                   <FormControl>
-                    <Input 
+                    <Input
                       {...field}
                       type="date"
                       value={value instanceof Date ? value.toISOString().split('T')[0] : value}
