@@ -34,13 +34,16 @@ export default function NoteUploadForm({ onSuccess }: Props) {
       const formData = new FormData();
       formData.append("document", file);
 
+      console.log('Uploading file:', file.name, file.size, file.type);
+
       const response = await fetch("/api/documents/process", {
         method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to process document");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to process document");
       }
 
       const data = await response.json();
@@ -54,6 +57,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           : "No contact information found",
       });
     } catch (error) {
+      console.error('Document processing error:', error);
       toast({
         title: "Error processing document",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -68,7 +72,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
     try {
       // First create or update the contact if we have extracted information
       let contactId: number | undefined;
-      
+
       if (extractedContact?.name && extractedContact?.company) {
         const contactResponse = await apiRequest("POST", "/api/contacts", {
           name: extractedContact.name,
@@ -109,7 +113,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Upload Conversation Notes</h2>
-      
+
       <FileUpload
         onUpload={processDocument}
         label="Upload Conversation Document"

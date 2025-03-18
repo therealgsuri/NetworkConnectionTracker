@@ -18,10 +18,6 @@ export function FileUpload({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size === 0) {
-        alert("The selected file appears to be empty. Please select a valid file.");
-        return;
-      }
       setFileName(file.name);
       onUpload(file);
     }
