@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function summarizeConversation(text: string): Promise<string> {
@@ -24,5 +23,29 @@ export async function summarizeConversation(text: string): Promise<string> {
   } catch (error) {
     console.error('Error summarizing conversation:', error);
     return "Conversation";
+  }
+}
+
+export async function generateConversationTitle(text: string): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", 
+      messages: [
+        {
+          role: "system",
+          content: "Generate a brief, engaging title (2-5 words) for this conversation that captures its essence. Be specific but concise. Respond with only the title."
+        },
+        {
+          role: "user",
+          content: text
+        }
+      ],
+      max_tokens: 15,
+    });
+
+    return response.choices[0].message.content || "Untitled Conversation";
+  } catch (error) {
+    console.error('Error generating conversation title:', error);
+    return "Untitled Conversation";
   }
 }

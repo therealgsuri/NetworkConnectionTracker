@@ -30,7 +30,10 @@ export default function NoteForm({ contactId, onSuccess }: Props) {
     },
   });
 
-  const processDocument = async (file: File) => {
+  const processDocument = async (files: File[]) => {
+    if (!files.length) return;
+
+    const file = files[0];
     setIsProcessing(true);
     try {
       const formData = new FormData();

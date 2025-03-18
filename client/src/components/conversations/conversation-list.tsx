@@ -38,10 +38,10 @@ export default function ConversationList({ contactId }: Props) {
           >
             <div className="flex flex-col gap-1">
               <div className="font-medium">
-                {format(new Date(conversation.meetingDate), 'MMM d, yyyy')}
+                {conversation.title || format(new Date(conversation.meetingDate), 'MMM d, yyyy')}
               </div>
               <div className="text-sm text-muted-foreground">
-                {conversation.summary || "Conversation"}
+                {format(new Date(conversation.meetingDate), 'MMM d, yyyy')} - {conversation.summary || "Conversation"}
               </div>
             </div>
           </Button>
@@ -52,7 +52,7 @@ export default function ConversationList({ contactId }: Props) {
         <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>
-              Conversation from {selectedNote && format(new Date(selectedNote.meetingDate), 'MMMM d, yyyy')}
+              {selectedNote?.title || format(new Date(selectedNote?.meetingDate || ''), 'MMMM d, yyyy')}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="mt-4">

@@ -20,6 +20,7 @@ export const notes = pgTable("notes", {
   id: serial("id").primaryKey(),
   contactId: integer("contact_id").notNull(),
   content: text("content").notNull(),
+  title: text("title"),
   summary: text("summary"),
   meetingDate: timestamp("meeting_date").notNull(),
   documentUrl: text("document_url"),
