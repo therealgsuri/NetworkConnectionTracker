@@ -46,7 +46,11 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           const formData = new FormData();
           formData.append("document", file);
 
-          console.log('Uploading file:', file.name, file.size, file.type);
+          console.log('Processing file:', {
+            filename: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size
+          });
 
           const response = await fetch("/api/documents/process", {
             method: "POST",
@@ -117,7 +121,10 @@ export default function NoteUploadForm({ onSuccess }: Props) {
         description: `Successfully processed ${successCount} out of ${status?.total || 0} documents. ${failureCount > 0 ? `${failureCount} files failed.` : ''}`
       });
 
-      onSuccess?.();
+      // Only close the dialog if there were no errors
+      if (fileErrors.length === 0) {
+        onSuccess?.();
+      }
     } catch (error) {
       console.error('Batch processing error:', error);
       toast({
@@ -195,6 +202,15 @@ export default function NoteUploadForm({ onSuccess }: Props) {
               ))}
             </div>
           </div>
+        )}
+
+        {(status?.processed === status?.total && status.total > 0) && (
+          <Button 
+            onClick={onSuccess} 
+            className="w-full mt-4"
+          >
+            Close
+          </Button>
         )}
       </div>
     </ScrollArea>
