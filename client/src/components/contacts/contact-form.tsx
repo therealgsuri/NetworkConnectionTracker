@@ -16,6 +16,8 @@ type Props = {
 
 export default function ContactForm({ onSuccess, defaultValues }: Props) {
   const { toast } = useToast();
+
+  // Initialize form with schema validation
   const form = useForm<InsertContact>({
     resolver: zodResolver(insertContactSchema),
     defaultValues: {
@@ -32,42 +34,29 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
     }
   });
 
-  const mutation = useMutation({
-    mutationFn: async (data: InsertContact) => {
-      // Log form data before submission
+  // Handle form submission
+  const onSubmit = async (data: InsertContact) => {
+    try {
       console.log('Submitting form data:', data);
 
-      const response = await apiRequest("POST", "/api/contacts", {
+      await apiRequest("POST", "/api/contacts", {
         ...data,
         lastContactDate: data.lastContactDate,
         nextContactDate: data.nextContactDate,
       });
 
-      return response;
-    },
-    onSuccess: () => {
       toast({ title: "Contact created successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
       form.reset();
       onSuccess?.();
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Form submission error:', error);
       toast({
         title: "Error creating contact",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to create contact",
         variant: "destructive"
       });
     }
-  });
-
-  const onSubmit = async (data: InsertContact) => {
-    console.log('Form validation state:', form.formState);
-    if (!form.formState.isValid) {
-      console.log('Form validation errors:', form.formState.errors);
-      return;
-    }
-    mutation.mutate(data);
   };
 
   return (
@@ -178,15 +167,13 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
             <FormField
               control={form.control}
               name="lastContactDate"
-              render={({ field: { value, onChange, ...field }}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Last Contact Date</FormLabel>
                   <FormControl>
                     <Input 
                       {...field}
                       type="date" 
-                      value={value}
-                      onChange={(e) => onChange(e.target.value)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -194,8 +181,15 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={mutation.isPending}>
-              {mutation.isPending ? "Creating..." : "Create Contact"}
+            <Button 
+              type="submit" 
+              className="w-full"
+              onClick={() => {
+                console.log('Form state:', form.getValues());
+                console.log('Form errors:', form.formState.errors);
+              }}
+            >
+              Create Contact
             </Button>
           </form>
         </Form>
