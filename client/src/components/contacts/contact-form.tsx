@@ -22,21 +22,28 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
       name: "",
       company: "",
       role: "",
-      email: "",
-      phone: "",
-      linkedinUrl: "",
+      email: null,
+      phone: null,
+      linkedinUrl: null,
       lastContactDate: new Date(),
+      nextContactDate: null,
+      notes: null,
       ...defaultValues
     }
   });
 
   const mutation = useMutation({
     mutationFn: async (data: InsertContact) => {
-      await apiRequest("POST", "/api/contacts", {
+      // Log form data before submission
+      console.log('Submitting form data:', data);
+
+      const response = await apiRequest("POST", "/api/contacts", {
         ...data,
         lastContactDate: data.lastContactDate.toISOString(),
         nextContactDate: data.nextContactDate?.toISOString() || null,
       });
+
+      return response;
     },
     onSuccess: () => {
       toast({ title: "Contact created successfully" });
@@ -45,20 +52,30 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
       onSuccess?.();
     },
     onError: (error) => {
-      toast({ 
-        title: "Error creating contact", 
+      console.error('Form submission error:', error);
+      toast({
+        title: "Error creating contact",
         description: error.message,
         variant: "destructive"
       });
     }
   });
 
+  const onSubmit = async (data: InsertContact) => {
+    console.log('Form validation state:', form.formState);
+    if (!form.formState.isValid) {
+      console.log('Form validation errors:', form.formState.errors);
+      return;
+    }
+    mutation.mutate(data);
+  };
+
   return (
     <ScrollArea className="max-h-[80vh]">
       <div className="p-6">
         <h2 className="text-lg font-semibold mb-4">Add New Contact</h2>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"

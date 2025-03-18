@@ -20,10 +20,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contacts", async (req, res) => {
     const result = insertContactSchema.safeParse(req.body);
     if (!result.success) {
+      console.error('Contact validation failed:', result.error.errors);
       return res.status(400).json({ errors: result.error.errors });
     }
-    const contact = await storage.createContact(result.data);
-    res.status(201).json(contact);
+
+    try {
+      const contact = await storage.createContact(result.data);
+      res.status(201).json(contact);
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      res.status(500).json({ message: "Failed to create contact", error: error.message });
+    }
   });
 
   app.patch("/api/contacts/:id", async (req, res) => {
