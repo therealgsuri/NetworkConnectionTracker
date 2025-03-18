@@ -22,6 +22,21 @@ const upload = multer({
   }
 });
 
+// Function to parse filename for date and name
+function parseFilename(filename: string): { date: string | null; name: string | null } {
+  const match = filename.match(/^(\d{8})\s*-\s*(.+?)(\.docx?)?$/i);
+  if (!match) return { date: null, name: null };
+
+  const [, dateStr, name] = match;
+  // Format YYYYMMDD to YYYY-MM-DD
+  const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+
+  return {
+    date: formattedDate,
+    name: name.trim()
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Contacts
   app.get("/api/contacts", async (_req, res) => {
@@ -155,8 +170,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         size: req.file.size
       });
 
-      if (req.file.size === 0) {
-        return res.status(400).json({ message: "Empty file uploaded" });
+      // Extract date and name from filename
+      const { date, name } = parseFilename(req.file.originalname);
+
+      if (!date || !name) {
+        return res.status(400).json({ 
+          message: "Invalid filename format. Expected: YYYYMMDD - Name.docx" 
+        });
       }
 
       // Convert Word document to text
@@ -171,16 +191,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Extract potential contact information using improved parsing
       const lines = text.split('\n');
-      const contactInfo: Record<string, string> = {};
+      const contactInfo: Record<string, string> = {
+        name,  // Use name from filename
+        meetingDate: date  // Use date from filename
+      };
 
-      // More robust parsing
+      // More robust parsing for additional information
       for (const line of lines) {
         const normalizedLine = line.toLowerCase().trim();
 
-        // Look for common patterns
-        if (normalizedLine.includes('name:') || normalizedLine.startsWith('name ')) {
-          contactInfo.name = line.split(/:|(?<=name)\s/i)[1]?.trim() || '';
-        }
         if (normalizedLine.includes('company:') || normalizedLine.includes('organization:')) {
           contactInfo.company = line.split(/:|(?<=company|organization)\s/i)[1]?.trim() || '';
         }
@@ -190,6 +209,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (normalizedLine.includes('email:')) {
           contactInfo.email = line.split(/:|(?<=email)\s/i)[1]?.trim() || '';
         }
+      }
+
+      // If company isn't found in the text, set a default
+      if (!contactInfo.company) {
+        contactInfo.company = "Unknown Company";
+      }
+
+      // If role isn't found in the text, set a default
+      if (!contactInfo.role) {
+        contactInfo.role = "Unknown Role";
       }
 
       console.log('Extracted contact info:', contactInfo);

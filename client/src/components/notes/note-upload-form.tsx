@@ -48,6 +48,9 @@ export default function NoteUploadForm({ onSuccess }: Props) {
 
       const data = await response.json();
       form.setValue("content", data.text);
+      if (data.extractedContact.meetingDate) {
+        form.setValue("meetingDate", data.extractedContact.meetingDate);
+      }
       setExtractedContact(data.extractedContact);
 
       toast({
@@ -79,7 +82,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           company: extractedContact.company,
           role: extractedContact.role || "Unknown",
           email: extractedContact.email || null,
-          lastContactDate: new Date().toISOString(),
+          lastContactDate: extractedContact.meetingDate || new Date().toISOString(),
           nextContactDate: null,
         });
         const contactData = await contactResponse.json();
