@@ -22,16 +22,23 @@ type ProcessingStatus = {
   failed: number;
 };
 
+type FileError = {
+  filename: string;
+  error: string;
+};
+
 export default function NoteUploadForm({ onSuccess }: Props) {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState<ProcessingStatus | null>(null);
   const [extractedContacts, setExtractedContacts] = useState<Record<string, any>[]>([]);
+  const [fileErrors, setFileErrors] = useState<FileError[]>([]);
 
   const processDocuments = async (files: File[]) => {
     setIsProcessing(true);
     setStatus({ total: files.length, processed: 0, succeeded: 0, failed: 0 });
     setExtractedContacts([]);
+    setFileErrors([]);
 
     try {
       for (const file of files) {
@@ -46,12 +53,12 @@ export default function NoteUploadForm({ onSuccess }: Props) {
             body: formData,
           });
 
+          const data = await response.json();
+
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to process document");
+            throw new Error(data.message || "Failed to process document");
           }
 
-          const data = await response.json();
           console.log('Processed document data:', data);
 
           if (data.extractedContact) {
@@ -87,6 +94,10 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           }
         } catch (error) {
           console.error('Error processing document:', error);
+          setFileErrors(prev => [...prev, {
+            filename: file.name,
+            error: error instanceof Error ? error.message : "Unknown error occurred"
+          }]);
           setStatus(prev => prev ? {
             ...prev,
             processed: prev.processed + 1,
@@ -98,9 +109,12 @@ export default function NoteUploadForm({ onSuccess }: Props) {
       // Refresh contacts list
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
 
+      const successCount = status?.succeeded || 0;
+      const failureCount = status?.failed || 0;
+
       toast({ 
         title: "Documents processed",
-        description: `Successfully processed ${status?.succeeded || 0} out of ${status?.total || 0} documents.`
+        description: `Successfully processed ${successCount} out of ${status?.total || 0} documents. ${failureCount > 0 ? `${failureCount} files failed.` : ''}`
       });
 
       onSuccess?.();
@@ -126,7 +140,6 @@ export default function NoteUploadForm({ onSuccess }: Props) {
     },
   });
 
-
   return (
     <ScrollArea className="h-[80vh] pr-4">
       <div className="space-y-4 p-6">
@@ -149,6 +162,20 @@ export default function NoteUploadForm({ onSuccess }: Props) {
               {status.failed > 0 && (
                 <p className="text-red-600">Failed: {status.failed}</p>
               )}
+            </div>
+          </div>
+        )}
+
+        {fileErrors.length > 0 && (
+          <div className="rounded-lg border border-red-200 p-4 mt-4 bg-red-50">
+            <h3 className="font-medium mb-2 text-red-900">Failed Files</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {fileErrors.map((error, index) => (
+                <div key={index} className="text-sm text-red-800">
+                  <p className="font-medium">{error.filename}</p>
+                  <p className="text-red-600">{error.error}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
