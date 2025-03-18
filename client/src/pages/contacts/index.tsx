@@ -10,6 +10,7 @@ import { Plus, Search } from "lucide-react";
 
 export default function ContactsPage() {
   const [search, setSearch] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { data: contacts = [] } = useQuery<Contact[]>({ 
     queryKey: ["/api/contacts"]
   });
@@ -23,15 +24,15 @@ export default function ContactsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Contacts</h1>
-        <Dialog>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>
           </DialogTrigger>
-          <DialogContent>
-            <ContactForm />
+          <DialogContent className="sm:max-w-[500px]">
+            <ContactForm onSuccess={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
