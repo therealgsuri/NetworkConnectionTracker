@@ -68,8 +68,8 @@ export default function ConversationList({ contactId }: Props) {
               {selectedNote?.title || (selectedNote?.meetingDate && formatDate(selectedNote.meetingDate))}
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="mt-4">
-            <div className="whitespace-pre-wrap">
+          <ScrollArea className="h-[60vh] mt-4 pr-4">
+            <div className="whitespace-pre-wrap text-sm leading-relaxed">
               {selectedNote?.content}
             </div>
           </ScrollArea>
