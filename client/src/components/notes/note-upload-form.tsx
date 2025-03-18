@@ -66,23 +66,38 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           if (data.extractedContact) {
             setExtractedContacts(prev => [...prev, data.extractedContact]);
 
-            // Create contact and note
-            const contactResponse = await apiRequest("POST", "/api/contacts", {
-              name: data.extractedContact.name,
-              company: data.extractedContact.company || "Unknown Company",
-              role: data.extractedContact.role || "Unknown Role",
-              email: data.extractedContact.email || null,
-              phone: null,
-              linkedinUrl: null,
-              lastContactDate: data.extractedContact.meetingDate || new Date().toISOString().split('T')[0],
-              nextContactDate: null,
-              notes: null,
-            });
+            // Check if contact already exists
+            const searchResponse = await fetch(`/api/contacts/search?name=${encodeURIComponent(data.extractedContact.name)}`);
+            const existingContact = await searchResponse.json();
 
-            const contactData = await contactResponse.json();
+            let contactId: number;
 
+            if (existingContact) {
+              // Use existing contact
+              contactId = existingContact.id;
+              console.log('Using existing contact:', existingContact.name);
+            } else {
+              // Create new contact
+              const contactResponse = await apiRequest("POST", "/api/contacts", {
+                name: data.extractedContact.name,
+                company: data.extractedContact.company || "Unknown Company",
+                role: data.extractedContact.role || "Unknown Role",
+                email: data.extractedContact.email || null,
+                phone: null,
+                linkedinUrl: null,
+                lastContactDate: data.extractedContact.meetingDate || new Date().toISOString().split('T')[0],
+                nextContactDate: null,
+                notes: null,
+              });
+
+              const contactData = await contactResponse.json();
+              contactId = contactData.id;
+              console.log('Created new contact:', contactData.name);
+            }
+
+            // Create note for the contact
             await apiRequest("POST", "/api/notes", {
-              contactId: contactData.id,
+              contactId: contactId,
               content: data.text,
               meetingDate: data.extractedContact.meetingDate || new Date().toISOString().split('T')[0],
               documentUrl: null,

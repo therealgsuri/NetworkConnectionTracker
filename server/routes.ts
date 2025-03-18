@@ -84,6 +84,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   });
 
+  // New route for searching contacts
+  app.get("/api/contacts/search", async (req, res) => {
+    try {
+      const name = req.query.name as string;
+      if (!name) {
+        return res.status(400).json({ message: "Name parameter is required" });
+      }
+
+      const contacts = await storage.getContacts();
+      const matchingContact = contacts.find(c =>
+        c.name.toLowerCase() === name.toLowerCase()
+      );
+
+      res.json(matchingContact || null);
+    } catch (error) {
+      console.error('Error searching contacts:', error);
+      res.status(500).json({ message: "Failed to search contacts" });
+    }
+  });
+
+
   // Notes
   app.get("/api/contacts/:id/notes", async (req, res) => {
     const notes = await storage.getNotes(Number(req.params.id));
@@ -174,8 +195,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { date, name } = parseFilename(req.file.originalname);
 
       if (!date || !name) {
-        return res.status(400).json({ 
-          message: "Invalid filename format. Expected: YYYYMMDD - Name.docx" 
+        return res.status(400).json({
+          message: "Invalid filename format. Expected: YYYYMMDD - Name.docx"
         });
       }
 
@@ -229,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error processing document:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to process document",
         details: error instanceof Error ? error.message : "Unknown error"
       });
