@@ -7,7 +7,6 @@ import multer from "multer";
 import mammoth from "mammoth";
 import { summarizeConversation, generateConversationTitle } from "./utils/openai";
 
-
 // Configure multer for Word documents only
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -147,6 +146,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const note = await storage.createNote(result.data);
     res.status(201).json(note);
+  });
+
+  // Add this new route after the existing note routes
+  app.post("/api/notes/regenerate-summaries", async (_req, res) => {
+    try {
+      const allNotes = await storage.getAllNotes();
+      console.log(`Processing ${allNotes.length} notes for summary regeneration`);
+
+      for (const note of allNotes) {
+        try {
+          if (note.content) {
+            const [summary, title] = await Promise.all([
+              summarizeConversation(note.content),
+              generateConversationTitle(note.content)
+            ]);
+
+            await storage.updateNote(note.id, {
+              summary,
+              title
+            });
+
+            console.log(`Updated note ${note.id} with new summary: ${summary}`);
+          }
+        } catch (error) {
+          console.error(`Error processing note ${note.id}:`, error);
+        }
+      }
+
+      res.json({ message: "Successfully updated all note summaries" });
+    } catch (error) {
+      console.error('Error regenerating summaries:', error);
+      res.status(500).json({ message: "Failed to regenerate summaries" });
+    }
   });
 
   // Companies
