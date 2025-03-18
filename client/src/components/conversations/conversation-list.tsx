@@ -17,9 +17,25 @@ export default function ConversationList({ contactId }: Props) {
     queryKey: [`/api/contacts/${contactId}/notes`]
   });
 
-  const sortedConversations = [...conversations].sort((a, b) => 
-    new Date(b.meetingDate).getTime() - new Date(a.meetingDate).getTime()
-  );
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const dateA = new Date(a.meetingDate);
+    const dateB = new Date(b.meetingDate);
+    return isNaN(dateB.getTime()) || isNaN(dateA.getTime()) 
+      ? 0 
+      : dateB.getTime() - dateA.getTime();
+  });
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      return format(date, 'MMM d, yyyy');
+    } catch {
+      return 'Invalid date';
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -38,10 +54,10 @@ export default function ConversationList({ contactId }: Props) {
           >
             <div className="flex flex-col gap-1">
               <div className="font-medium">
-                {conversation.title || format(new Date(conversation.meetingDate), 'MMM d, yyyy')}
+                {conversation.title || formatDate(conversation.meetingDate)}
               </div>
               <div className="text-sm text-muted-foreground">
-                {format(new Date(conversation.meetingDate), 'MMM d, yyyy')} - {conversation.summary || "Conversation"}
+                {formatDate(conversation.meetingDate)} - {conversation.summary || "Conversation"}
               </div>
             </div>
           </Button>
@@ -52,7 +68,7 @@ export default function ConversationList({ contactId }: Props) {
         <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>
-              {selectedNote?.title || format(new Date(selectedNote?.meetingDate || ''), 'MMMM d, yyyy')}
+              {selectedNote?.title || (selectedNote?.meetingDate && formatDate(selectedNote.meetingDate))}
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="mt-4">
