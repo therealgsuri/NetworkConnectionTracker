@@ -38,7 +38,14 @@ export async function generateConversationTitle(text: string): Promise<string> {
       messages: [
         {
           role: "system",
-          content: "You are a conversation title generator. Create a brief, specific title (2-5 words) that captures the main topic or key outcome of the conversation. Focus on concrete subjects and actions. Titles should be professional and clear. Examples: 'Engineering Team Planning', 'Product Roadmap Review', 'Client Project Kickoff'. Reply with only the title text."
+          content: `You are a career conversation title generator. Create a specific, detailed title (3-7 words) that captures the key career insights or advice from the conversation. Focus on:
+- Job roles and responsibilities (e.g. 'Product Ops Supply Chain Role Overview')
+- Application strategies (e.g. 'Resume Tailoring for Tech Applications')
+- Interview preparation (e.g. 'Apple Behavioral Interview Process Guide')
+- Career development (e.g. 'Engineering to Product Management Transition')
+- Company culture and structure (e.g. 'Silicon Valley Workaholic Culture Insights')
+
+Respond only with the title. Make it specific to the company or role discussed if mentioned.`
         },
         {
           role: "user",
@@ -50,9 +57,9 @@ export async function generateConversationTitle(text: string): Promise<string> {
     });
 
     const title = response.choices[0].message.content?.trim();
-    return title || "Meeting Notes";
+    return title || "Career Discussion Notes";
   } catch (error) {
     console.error('Error generating conversation title:', error);
-    return "Meeting Notes";
+    return "Career Discussion Notes";
   }
 }
