@@ -23,6 +23,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
   const form = useForm<InsertNote>({
     resolver: zodResolver(insertNoteSchema),
     defaultValues: {
+      contactId: 0,
       content: "",
       meetingDate: new Date().toISOString().split("T")[0],
       documentUrl: null,
@@ -76,6 +77,9 @@ export default function NoteUploadForm({ onSuccess }: Props) {
 
   const onSubmit = async (formData: InsertNote) => {
     try {
+      console.log('Form data before submission:', formData);
+      console.log('Form validation state:', form.formState);
+
       setIsProcessing(true);
 
       if (!extractedContact?.name) {
@@ -123,7 +127,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
 
   return (
     <ScrollArea className="h-[80vh] pr-4">
-      <div className="space-y-4">
+      <div className="space-y-4 p-6">
         <h2 className="text-lg font-semibold">Upload Conversation Notes</h2>
 
         <FileUpload
@@ -161,11 +165,16 @@ export default function NoteUploadForm({ onSuccess }: Props) {
             <FormField
               control={form.control}
               name="meetingDate"
-              render={({ field }) => (
+              render={({ field: { value, onChange, ...field } }) => (
                 <FormItem>
                   <FormLabel>Meeting Date</FormLabel>
                   <FormControl>
-                    <Input {...field} type="date" />
+                    <Input 
+                      {...field}
+                      type="date"
+                      value={value instanceof Date ? value.toISOString().split('T')[0] : value}
+                      onChange={(e) => onChange(e.target.value)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -176,6 +185,10 @@ export default function NoteUploadForm({ onSuccess }: Props) {
               type="submit"
               className="w-full"
               disabled={isProcessing || !extractedContact}
+              onClick={() => {
+                console.log('Form state:', form.getValues());
+                console.log('Form errors:', form.formState.errors);
+              }}
             >
               Save Note & Create Contact
             </Button>
