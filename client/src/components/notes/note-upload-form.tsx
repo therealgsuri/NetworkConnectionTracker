@@ -48,6 +48,8 @@ export default function NoteUploadForm({ onSuccess }: Props) {
       }
 
       const data = await response.json();
+      console.log('Processed document data:', data);
+
       form.setValue("content", data.text);
       if (data.extractedContact.meetingDate) {
         form.setValue("meetingDate", data.extractedContact.meetingDate);
@@ -72,45 +74,50 @@ export default function NoteUploadForm({ onSuccess }: Props) {
     }
   };
 
-  const onSubmit = async (data: InsertNote) => {
+  const onSubmit = async (formData: InsertNote) => {
     try {
-      // First create or update the contact if we have extracted information
-      let contactId: number | undefined;
+      setIsProcessing(true);
 
-      if (extractedContact?.name && extractedContact?.company) {
-        const contactResponse = await apiRequest("POST", "/api/contacts", {
-          name: extractedContact.name,
-          company: extractedContact.company,
-          role: extractedContact.role || "Unknown",
-          email: extractedContact.email || null,
-          lastContactDate: extractedContact.meetingDate || new Date().toISOString(),
-          nextContactDate: null,
-        });
-        const contactData = await contactResponse.json();
-        contactId = contactData.id;
+      if (!extractedContact?.name) {
+        throw new Error("No contact information found");
       }
 
-      if (!contactId) {
-        throw new Error("Could not create contact from document");
-      }
+      console.log('Creating contact with data:', extractedContact);
+
+      // First create the contact
+      const contactResponse = await apiRequest("POST", "/api/contacts", {
+        name: extractedContact.name,
+        company: extractedContact.company || "Unknown Company",
+        role: extractedContact.role || "Unknown Role",
+        email: extractedContact.email || null,
+        lastContactDate: extractedContact.meetingDate || new Date().toISOString().split('T')[0],
+        nextContactDate: null,
+        notes: null,
+      });
+
+      const contactData = await contactResponse.json();
+      console.log('Created contact:', contactData);
 
       // Then create the note
       await apiRequest("POST", "/api/notes", {
-        ...data,
-        contactId,
+        ...formData,
+        contactId: contactData.id,
+        meetingDate: extractedContact.meetingDate || formData.meetingDate,
       });
 
-      toast({ title: "Note added successfully" });
+      toast({ title: "Note and contact created successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/contacts/${contactId}/notes`] });
       form.reset();
       onSuccess?.();
     } catch (error) {
+      console.error('Form submission error:', error);
       toast({
-        title: "Error adding note",
+        title: "Error creating note and contact",
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
