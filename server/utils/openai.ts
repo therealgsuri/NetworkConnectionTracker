@@ -10,7 +10,7 @@ export async function summarizeConversation(text: string): Promise<string> {
       messages: [
         {
           role: "system",
-          content: "You are a career conversation summarizer. Given a conversation transcript about someone's career, job opportunity, or company discussion, create a concise 3-6 word summary that captures the key career-related topic or purpose. Examples: 'Software Engineering Career Path Discussion', 'Startup CTO Role Exploration', 'Google Product Team Interview'. Focus on the professional development or job opportunity aspect. Respond with only the summary text."
+          content: "You are a conversation summarizer. Given a conversation transcript, create a concise 3-6 word summary that captures the key topic or purpose. Include the main action or decision if applicable. Example summaries: 'Product Launch Strategy Discussion', 'Sales Pipeline Review Meeting', 'Technical Interview Feedback Session'. Respond with only the summary text."
         },
         {
           role: "user",
@@ -22,10 +22,11 @@ export async function summarizeConversation(text: string): Promise<string> {
     });
 
     const summary = response.choices[0].message.content?.trim();
-    return summary || "Career Discussion";
+    return summary || "Meeting Discussion";
   } catch (error) {
     console.error('Error summarizing conversation:', error);
-    return "Career Discussion";
+    // Provide a more descriptive fallback based on text length
+    return text.length > 100 ? "Detailed Discussion" : "Brief Meeting";
   }
 }
 
@@ -36,7 +37,7 @@ export async function generateConversationTitle(text: string): Promise<string> {
       messages: [
         {
           role: "system",
-          content: "Generate a brief, descriptive title (2-5 words) for this career-related conversation that captures its main focus. Examples: 'Frontend Developer Interview Prep', 'Startup Leadership Discussion', 'Tech Career Transition Strategy'. Focus on the professional or career aspect. Respond with only the title."
+          content: "Generate a brief, descriptive title (2-5 words) for this conversation that captures its main topic or purpose. Focus on concrete subjects and actions. Examples: 'Q4 Marketing Strategy', 'Cloud Migration Planning', 'Client Onboarding Process'. Respond with only the title."
         },
         {
           role: "user",
@@ -48,9 +49,9 @@ export async function generateConversationTitle(text: string): Promise<string> {
     });
 
     const title = response.choices[0].message.content?.trim();
-    return title || "Career Discussion";
+    return title || "Meeting Notes";
   } catch (error) {
     console.error('Error generating conversation title:', error);
-    return "Career Discussion";
+    return "Meeting Notes";
   }
 }

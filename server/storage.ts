@@ -25,8 +25,6 @@ export interface IStorage {
   // Notes
   getNotes(contactId: number): Promise<Note[]>;
   createNote(note: InsertNote): Promise<Note>;
-  getAllNotes(): Promise<Note[]>;
-  updateNote(id: number, note: Partial<InsertNote>): Promise<Note>;
 
   // Companies
   getCompanies(): Promise<Company[]>;
@@ -88,20 +86,6 @@ export class DatabaseStorage implements IStorage {
   async createNote(note: InsertNote): Promise<Note> {
     const [newNote] = await db.insert(notes).values(note).returning();
     return newNote;
-  }
-
-  async getAllNotes(): Promise<Note[]> {
-    return await db.select().from(notes);
-  }
-
-  async updateNote(id: number, note: Partial<InsertNote>): Promise<Note> {
-    const [updated] = await db
-      .update(notes)
-      .set(note)
-      .where(eq(notes.id, id))
-      .returning();
-    if (!updated) throw new Error("Note not found");
-    return updated;
   }
 
   async getCompanies(): Promise<Company[]> {
