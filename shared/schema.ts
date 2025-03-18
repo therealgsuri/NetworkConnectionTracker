@@ -57,20 +57,20 @@ export const insertContactSchema = baseContactSchema.extend({
   linkedinUrl: z.string().url().nullable(),
   email: z.string().email().nullable(),
   phone: z.string().nullable(),
-  lastContactDate: z.date(),
-  nextContactDate: z.date().nullable(),
+  lastContactDate: z.string().transform((date) => new Date(date)),
+  nextContactDate: z.string().nullable().transform((date) => date ? new Date(date) : null),
   notes: z.string().nullable(),
 }).omit({ id: true });
 
 export const insertNoteSchema = baseNoteSchema.extend({
-  meetingDate: z.date(),
+  meetingDate: z.string().transform((date) => new Date(date)),
   documentUrl: z.string().url().nullable(),
 }).omit({ id: true });
 
 export const insertCompanySchema = baseCompanySchema.omit({ id: true });
 
 export const insertReminderSchema = baseReminderSchema.extend({
-  dueDate: z.date(),
+  dueDate: z.string().transform((date) => new Date(date)),
 }).omit({ id: true });
 
 export const insertUserPreferencesSchema = baseUserPreferencesSchema.omit({ id: true });

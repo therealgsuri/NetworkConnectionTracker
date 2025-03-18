@@ -25,7 +25,7 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
       email: null,
       phone: null,
       linkedinUrl: null,
-      lastContactDate: new Date(),
+      lastContactDate: new Date().toISOString().split('T')[0],
       nextContactDate: null,
       notes: null,
       ...defaultValues
@@ -39,8 +39,8 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
 
       const response = await apiRequest("POST", "/api/contacts", {
         ...data,
-        lastContactDate: data.lastContactDate.toISOString(),
-        nextContactDate: data.nextContactDate?.toISOString() || null,
+        lastContactDate: data.lastContactDate,
+        nextContactDate: data.nextContactDate,
       });
 
       return response;
@@ -185,8 +185,8 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
                     <Input 
                       {...field}
                       type="date" 
-                      value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
-                      onChange={(e) => onChange(new Date(e.target.value))}
+                      value={value}
+                      onChange={(e) => onChange(e.target.value)}
                     />
                   </FormControl>
                   <FormMessage />
