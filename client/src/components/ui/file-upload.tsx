@@ -8,12 +8,20 @@ interface FileUploadProps {
   label?: string;
 }
 
-export function FileUpload({ onUpload, accept = ".docx", label = "Upload Document" }: FileUploadProps) {
+export function FileUpload({ 
+  onUpload, 
+  accept = ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
+  label = "Upload Document" 
+}: FileUploadProps) {
   const [fileName, setFileName] = useState<string>("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size === 0) {
+        alert("The selected file appears to be empty. Please select a valid file.");
+        return;
+      }
       setFileName(file.name);
       onUpload(file);
     }

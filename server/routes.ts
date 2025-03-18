@@ -6,7 +6,21 @@ import { z } from "zod";
 import multer from "multer";
 import mammoth from "mammoth";
 
-const upload = multer({ storage: multer.memoryStorage() });
+// Configure multer for Word documents only
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (_req, file, callback) => {
+    const allowedTypes = [
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword' // .doc
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Only Word documents (.doc or .docx) are allowed'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Contacts
@@ -128,36 +142,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(prefs);
   });
 
-  // New route for processing Word documents
+  // Updated document processing route
   app.post("/api/documents/process", upload.single("document"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      console.log('Processing file:', {
+        filename: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      });
+
+      if (req.file.size === 0) {
+        return res.status(400).json({ message: "Empty file uploaded" });
+      }
+
       // Convert Word document to text
       const result = await mammoth.extractRawText({ buffer: req.file.buffer });
       const text = result.value;
 
-      // Extract potential contact information
-      // This is a simple example - you might want to use more sophisticated parsing
+      if (!text) {
+        return res.status(400).json({ message: "No text content found in document" });
+      }
+
+      console.log('Extracted text length:', text.length);
+
+      // Extract potential contact information using improved parsing
       const lines = text.split('\n');
       const contactInfo: Record<string, string> = {};
 
+      // More robust parsing
       for (const line of lines) {
-        if (line.toLowerCase().includes('name:')) {
-          contactInfo.name = line.split(':')[1]?.trim() || '';
+        const normalizedLine = line.toLowerCase().trim();
+
+        // Look for common patterns
+        if (normalizedLine.includes('name:') || normalizedLine.startsWith('name ')) {
+          contactInfo.name = line.split(/:|(?<=name)\s/i)[1]?.trim() || '';
         }
-        if (line.toLowerCase().includes('company:')) {
-          contactInfo.company = line.split(':')[1]?.trim() || '';
+        if (normalizedLine.includes('company:') || normalizedLine.includes('organization:')) {
+          contactInfo.company = line.split(/:|(?<=company|organization)\s/i)[1]?.trim() || '';
         }
-        if (line.toLowerCase().includes('role:')) {
-          contactInfo.role = line.split(':')[1]?.trim() || '';
+        if (normalizedLine.includes('role:') || normalizedLine.includes('title:') || normalizedLine.includes('position:')) {
+          contactInfo.role = line.split(/:|(?<=role|title|position)\s/i)[1]?.trim() || '';
         }
-        if (line.toLowerCase().includes('email:')) {
-          contactInfo.email = line.split(':')[1]?.trim() || '';
+        if (normalizedLine.includes('email:')) {
+          contactInfo.email = line.split(/:|(?<=email)\s/i)[1]?.trim() || '';
         }
       }
+
+      console.log('Extracted contact info:', contactInfo);
 
       res.json({
         text,
@@ -165,7 +200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error processing document:', error);
-      res.status(500).json({ message: "Failed to process document" });
+      res.status(500).json({ 
+        message: "Failed to process document",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
