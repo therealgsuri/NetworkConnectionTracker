@@ -1,0 +1,64 @@
+Automated Networking Tracker for Product Management Job Search
+Prompt:
+Build a web-based tool that helps track networking connections automatically. The tool should allow users to input a contact's name, current company, and last conversation date, then automate the following actions:
+
+Core Features:
+LinkedIn Profile Fetching
+
+Automatically retrieve and store the person's LinkedIn profile.
+Follow-up Reminders
+
+Schedule a reminder for the user to reach out again based on a chosen timeframe (e.g., 2 weeks, 1 month).
+Job Search Automation
+
+Scan tracked companies' career pages daily for open Product Manager roles (or other user-specified job titles).
+Notify the user at 7 AM EST if any relevant jobs are posted.
+Recent News Aggregation
+
+Collect and display relevant recent news related to any companies the contact has previously worked for.
+Career History Tracking
+
+Log all previous companies where the contact has worked (based on LinkedIn data).
+Meeting Log & Call Notes Storage
+
+Store details of where and when the user initially met the contact.
+Upload a Word document (.docx) with call notes, and the system will:
+Extract the text and store it in the contact’s profile.
+Allow for searching within notes for quick reference.
+Advanced Networking Insights:
+Target Company & Role Matchmaking
+User can add a list of companies they are interested in working at.
+User can add a list of job titles they are interested in.
+The tool will analyze all networking connections and highlight valuable connections based on:
+GOLD-tier connection: Contact has the same or a similar job title AND works at one of the user’s target companies.
+SILVER-tier connection: Contact works at a target company (but may not have a matching title).
+These insights should be highlighted in the dashboard and daily email notification.
+Daily Notifications (7 AM EST)
+New job postings from tracked companies.
+Follow-up reminders for networking contacts.
+Recent company news updates.
+Gold & Silver networking opportunities (who to reach out to).
+Summary of recent call notes from uploaded documents.
+Tech Stack Recommendations:
+Backend: Python (Flask/FastAPI) or Node.js
+Web Scraping: BeautifulSoup or Scrapy (for job postings & news)
+LinkedIn Automation: LinkedIn API or Google Search scraping
+Google Calendar API: For scheduling follow-ups
+Email/Notification System: Twilio, SendGrid, Firebase Cloud Messaging
+Database: PostgreSQL, Firebase, or MongoDB for storing contacts and job postings
+Document Processing: Python-docx (for extracting text from .docx files)
+Frontend: React (for an interactive dashboard)
+This tool will act as your personalized job search & networking assistant, automatically logging your call notes, keeping you updated on opportunities and key people to reconnect with.
+
+Let me know if you'd like any additional refinements! 🚀
+
+
+
+
+
+
+You said:
+OK this is great - now help me break this into bite size pieces to feed to replit and bolt and recommend that best way to get this coded up
+ChatGPT said:
+Breaking Down the Automated Networking Tracker Into Bite-Sized Development Tasks
+Since you want to build this on Replit and use tools like Bolt (for AI-assisted development), we should break the project into modular, manageable steps that can be coded up incrementally.
