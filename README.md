@@ -12,6 +12,30 @@ A comprehensive contact management system for professional networking that enabl
 - Sortable contact list view
 - Edit capabilities for contact information and conversation details
 
+## Document Upload Requirements
+
+When uploading conversation documents, the files must follow this naming convention:
+
+```
+YYYYMMDD - First Last.docx
+```
+
+### File Name Format Rules:
+- Date must be in YYYYMMDD format (e.g., 20240317)
+- A hyphen (-) or en dash (–) should separate the date and name
+- Name should be in "First Last" format
+- File must be a Word document (.doc or .docx)
+
+### Examples of Valid File Names:
+- `20240317 - John Smith.docx`
+- `20240318 - Sarah Jones.docx`
+- `20240319 – Alex Brown.docx`
+
+### Common Issues to Avoid:
+- Don't include extra spaces at the end of the name
+- Don't include middle names or titles
+- Don't use other date formats
+
 ## Tech Stack
 
 - React frontend with TypeScript
