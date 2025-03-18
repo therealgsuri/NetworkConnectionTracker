@@ -5,6 +5,7 @@ import { insertContactSchema, insertNoteSchema, insertCompanySchema, insertRemin
 import { z } from "zod";
 import multer from "multer";
 import mammoth from "mammoth";
+import { summarizeConversation } from "./utils/openai";
 
 // Configure multer for Word documents only
 const upload = multer({
@@ -235,13 +236,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No text content found in document" });
       }
 
+      // Generate summary using OpenAI
+      const summary = await summarizeConversation(text);
+
       console.log('Extracted text length:', text.length);
+      console.log('Generated summary:', summary);
 
       // Extract potential contact information using improved parsing
       const lines = text.split('\n');
       const contactInfo: Record<string, string> = {
         name,  // Use name from filename
-        meetingDate: date  // Use date from filename
+        meetingDate: date,  // Use date from filename
+        summary: summary  // Add the generated summary
       };
 
       // More robust parsing for additional information

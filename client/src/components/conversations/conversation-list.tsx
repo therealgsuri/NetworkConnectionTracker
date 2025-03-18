@@ -40,8 +40,8 @@ export default function ConversationList({ contactId }: Props) {
               <div className="font-medium">
                 {format(new Date(conversation.meetingDate), 'MMM d, yyyy')}
               </div>
-              <div className="text-sm text-muted-foreground line-clamp-2">
-                {conversation.content}
+              <div className="text-sm text-muted-foreground">
+                {conversation.summary || "Conversation"}
               </div>
             </div>
           </Button>
