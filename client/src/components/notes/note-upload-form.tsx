@@ -47,9 +47,9 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           formData.append("document", file);
 
           console.log('Processing file:', {
-            filename: file.originalname,
-            mimetype: file.mimetype,
-            size: file.size
+            name: file.name,
+            size: file.size,
+            type: file.type
           });
 
           const response = await fetch("/api/documents/process", {
@@ -62,8 +62,6 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           if (!response.ok) {
             throw new Error(data.message || "Failed to process document");
           }
-
-          console.log('Processed document data:', data);
 
           if (data.extractedContact) {
             setExtractedContacts(prev => [...prev, data.extractedContact]);
@@ -120,11 +118,6 @@ export default function NoteUploadForm({ onSuccess }: Props) {
         title: "Documents processed",
         description: `Successfully processed ${successCount} out of ${status?.total || 0} documents. ${failureCount > 0 ? `${failureCount} files failed.` : ''}`
       });
-
-      // Only close the dialog if there were no errors
-      if (fileErrors.length === 0) {
-        onSuccess?.();
-      }
     } catch (error) {
       console.error('Batch processing error:', error);
       toast({
