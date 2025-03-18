@@ -166,6 +166,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add this inside the registerRoutes function, after the existing notes routes
+  app.patch("/api/notes/:id", async (req, res) => {
+    try {
+      const { title, meetingDate } = req.body;
+
+      await db
+        .update(notes)
+        .set({ 
+          title: title || null,
+          meetingDate: meetingDate ? new Date(meetingDate) : undefined
+        })
+        .where(eq(notes.id, Number(req.params.id)));
+
+      const [updatedNote] = await db
+        .select()
+        .from(notes)
+        .where(eq(notes.id, Number(req.params.id)));
+
+      res.json(updatedNote);
+    } catch (error) {
+      console.error('Error updating note:', error);
+      res.status(500).json({ message: "Failed to update note" });
+    }
+  });
+
   // Add this route after the existing notes routes
   app.get("/api/notes/regenerate-summaries", async (req, res) => {
     try {

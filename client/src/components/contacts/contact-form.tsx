@@ -12,12 +12,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 type Props = {
   onSuccess?: () => void;
   defaultValues?: Partial<InsertContact>;
+  isEditing?: boolean;
 };
 
-export default function ContactForm({ onSuccess, defaultValues }: Props) {
+export default function ContactForm({ onSuccess, defaultValues, isEditing }: Props) {
   const { toast } = useToast();
 
-  // Initialize form with schema validation
   const form = useForm<InsertContact>({
     resolver: zodResolver(insertContactSchema),
     defaultValues: {
@@ -34,37 +34,35 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
     }
   });
 
-  // Handle form submission
-  const onSubmit = async (data: InsertContact) => {
-    try {
-      console.log('Submitting form data:', data);
-
-      await apiRequest("POST", "/api/contacts", {
-        ...data,
-        lastContactDate: data.lastContactDate,
-        nextContactDate: data.nextContactDate,
-      });
-
-      toast({ title: "Contact created successfully" });
+  const mutation = useMutation({
+    mutationFn: async (data: InsertContact) => {
+      if (isEditing && defaultValues?.id) {
+        return apiRequest("PATCH", `/api/contacts/${defaultValues.id}`, data);
+      }
+      return apiRequest("POST", "/api/contacts", data);
+    },
+    onSuccess: () => {
+      toast({ title: `Contact ${isEditing ? 'updated' : 'created'} successfully` });
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
-      form.reset();
+      if (!isEditing) {
+        form.reset();
+      }
       onSuccess?.();
-    } catch (error) {
-      console.error('Form submission error:', error);
+    },
+    onError: (error) => {
       toast({
-        title: "Error creating contact",
-        description: error instanceof Error ? error.message : "Failed to create contact",
+        title: `Error ${isEditing ? 'updating' : 'creating'} contact`,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive"
       });
-    }
-  };
+    },
+  });
 
   return (
     <ScrollArea className="max-h-[80vh]">
       <div className="p-6">
-        <h2 className="text-lg font-semibold mb-4">Add New Contact</h2>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -184,12 +182,9 @@ export default function ContactForm({ onSuccess, defaultValues }: Props) {
             <Button 
               type="submit" 
               className="w-full"
-              onClick={() => {
-                console.log('Form state:', form.getValues());
-                console.log('Form errors:', form.formState.errors);
-              }}
+              disabled={mutation.isPending}
             >
-              Create Contact
+              {isEditing ? 'Update Contact' : 'Create Contact'}
             </Button>
           </form>
         </Form>

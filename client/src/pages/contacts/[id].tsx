@@ -3,15 +3,16 @@ import { useParams, useLocation } from "wouter";
 import { Contact, Note, Reminder } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Link as LinkIcon, Mail, Phone } from "lucide-react";
+import { Trash2, Plus, Link as LinkIcon, Mail, Phone, Edit } from "lucide-react";
 import { format } from "date-fns";
 import ConversationList from "@/components/conversations/conversation-list";
 import ReminderForm from "@/components/reminders/reminder-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import ContactForm from "@/components/contacts/contact-form";
 
 export default function ContactDetail() {
   const { id } = useParams();
@@ -63,14 +64,32 @@ export default function ContactDetail() {
             {contact.role} at {contact.company}
           </p>
         </div>
-        <Button
-          variant="destructive"
-          onClick={() => deleteMutation.mutate()}
-          disabled={deleteMutation.isPending}
-        >
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete Contact
-        </Button>
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Contact
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Contact</DialogTitle>
+              </DialogHeader>
+              <ContactForm defaultValues={contact} onSuccess={() => {
+                queryClient.invalidateQueries({ queryKey: [`/api/contacts/${contactId}`] });
+              }} isEditing />
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="destructive"
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Contact
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -148,7 +167,7 @@ export default function ContactDetail() {
         </TabsList>
 
         <TabsContent value="conversations" className="space-y-4">
-          <ConversationList contactId={contactId} />
+          <ConversationList contactId={contactId} canEdit />
         </TabsContent>
 
         <TabsContent value="reminders" className="space-y-4">
