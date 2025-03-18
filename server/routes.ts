@@ -30,8 +30,11 @@ function parseFilename(filename: string): { date: string | null; name: string | 
   // Remove any trailing spaces and file extension
   const cleanedFilename = filename.trim().replace(/\.docx?$/i, '');
 
-  // Match the pattern: YYYYMMDD - First Last
-  const match = cleanedFilename.match(/^(\d{8})\s*-\s*(.+?)$/i);
+  // Replace various types of dashes with a standard hyphen
+  const normalizedFilename = cleanedFilename.replace(/[\u2013\u2014\s\-]+/g, '-');
+
+  // Match the pattern: YYYYMMDD-First Last
+  const match = normalizedFilename.match(/^(\d{8})-(.+?)$/i);
   if (!match) return { date: null, name: null };
 
   const [, dateStr, fullName] = match;
