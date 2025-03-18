@@ -197,7 +197,7 @@ export default function NoteUploadForm({ onSuccess }: Props) {
           </div>
         )}
 
-        {(status?.processed === status?.total && status.total > 0) && (
+        {status && status.processed === status.total && status.total > 0 && (
           <Button 
             onClick={onSuccess} 
             className="w-full mt-4"
